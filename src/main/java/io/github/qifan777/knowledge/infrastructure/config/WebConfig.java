@@ -1,6 +1,7 @@
 package io.github.qifan777.knowledge.infrastructure.config;
 
 import cn.dev33.satoken.interceptor.SaInterceptor;
+import io.github.qifan777.knowledge.infrastructure.config.threadLocalAutoExtends.AutoExtendsThreadListener;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
         executor.setMaxPoolSize(10);
         executor.setQueueCapacity(25);
         executor.setThreadNamePrefix("MyApp-Async-");
+        executor.setThreadFactory(AutoExtendsThreadListener.Registry.Thread_FACTORY);
         executor.initialize();
         return executor;
     }

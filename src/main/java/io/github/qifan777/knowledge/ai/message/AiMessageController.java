@@ -1,9 +1,12 @@
 package io.github.qifan777.knowledge.ai.message;
 
+import cn.dev33.satoken.spring.SpringMVCUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.qifan777.knowledge.ai.agent.Agent;
 import io.github.qifan777.knowledge.ai.message.dto.AiMessageInput;
 import io.github.qifan777.knowledge.ai.message.dto.AiMessageWrapper;
+import io.github.qifan777.knowledge.infrastructure.config.MyFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +31,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RequestMapping("message")
 @RestController
@@ -63,6 +69,7 @@ public class AiMessageController {
 //        return imageModel.call(new ImagePrompt(input.getTextContent())).getResult().getOutput().getUrl();
 //    }
 
+    public static final Map<String, HttpServletResponse> RESPONSE_MAP = new HashMap<>();
     /**
      * 为了支持文件问答，需要同时接收json（AiMessageWrapper json体）和 MultipartFile（文件）
      * Content-Type 从 application/json 修改为 multipart/form-data
@@ -86,9 +93,13 @@ public class AiMessageController {
             functionBeanNames = new String[beansWithAnnotation.size()];
             functionBeanNames = beansWithAnnotation.keySet().toArray(functionBeanNames);
         }
+
+        String uuid = SpringMVCUtil.getRequest().getSession().getId();
+        HttpServletResponse response = SpringMVCUtil.getResponse();
+        RESPONSE_MAP.put(uuid, response);
         return ChatClient.create(chatModel).prompt()
                 // 启用文件问答
-                .system(promptSystemSpec -> useFile(promptSystemSpec, file))
+                .system(promptSystemSpec -> useFile(uuid, promptSystemSpec, file))
                 .user(promptUserSpec -> toPrompt(promptUserSpec, aiMessageWrapper.getMessage()))
                 // agent列表
                 .functions(functionBeanNames)
@@ -103,7 +114,8 @@ public class AiMessageController {
                 .map(chatResponse -> ServerSentEvent.builder(toJson(chatResponse))
                         // 和前端监听的事件相对应
                         .event("message")
-                        .build());
+                        .build())
+                .doAfterTerminate(() -> RESPONSE_MAP.remove(uuid));
     }
 
     @SneakyThrows
@@ -146,16 +158,20 @@ public class AiMessageController {
     }
 
     @SneakyThrows
-    public void useFile(ChatClient.PromptSystemSpec spec, MultipartFile file) {
-        if (file == null) return;
+    public void useFile(String uuid, ChatClient.PromptSystemSpec spec, MultipartFile file) {
+        if (file == null) {
+            spec.text(new PromptTemplate("当前对话uuid: " + uuid + " ").createMessage().getText());
+            return;
+        }
         String content = new TikaDocumentReader(new InputStreamResource(file.getInputStream())).get().get(0).getText();
         Message message = new PromptTemplate("""
+                当前对话uuid: {uuid}
                 已下内容是额外的知识，在你回答问题时可以参考下面的内容
                 ---------------------
                 {context}
                 ---------------------
                 """)
-                .createMessage(Map.of("context", content));
+                .createMessage(Map.of("context", content, "uuid", uuid));
         spec.text(message.getText());
     }
 

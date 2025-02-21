@@ -101,6 +101,7 @@ const handleSendMessage = async (message: { text: string; image: string }) => {
     method: 'POST'
   })
   evtSource.addEventListener('message', async (event: any) => {
+    debugger
     const response = JSON.parse(event.data) as ChatResponse
     const finishReason = response.result.metadata.finishReason
     if (response.result.output.content) {
@@ -117,6 +118,10 @@ const handleSendMessage = async (message: { text: string; image: string }) => {
       // 保存大模型的回复
       await api.aiMessageController.save({ body: responseMessage.value })
     }
+  })
+  evtSource.addEventListener('toolFunc', async (event: any) => {
+    debugger
+    console.log(event)
   })
 
   // 调用stream，发起请求。
@@ -239,7 +244,7 @@ const fileList = ref<UploadUserFile[]>([])
           <el-form-item label="agent（智能体）">
             <el-switch v-model="options.enableAgent"></el-switch>
           </el-form-item>
-          <el-form-item label="文件">
+          <el-form-item label="提示词文档">
             <div class="upload">
               <el-upload v-model:file-list="fileList" :auto-upload="false" :limit="1">
                 <el-button type="primary">上传文本文件</el-button>

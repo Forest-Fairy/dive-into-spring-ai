@@ -16,37 +16,28 @@
 - Java 17
 - Node.js 18+
 - MySQL 8
+  
+    ``` shell
+        docker pull mysql:8.0.31
+        docker run -p 3306:3306 --restart=always --name mysql --privileged=true -v /home/mysql/log:/var/log/mysql -v /home/mysql/data:/var/lib/mysql -v /home/mysql/conf/my.cnf:/etc/mysql/my.cnf -e MYSQL_ROOT_PASSWORD=a12bCd3_W45pUq6 -d mysql:8.0.31
+    ```
+  密码：a12bCd3_W45pUq6
+
 - DashScope API KEY（或者其他）
 - Redis-Stack
 
   redis基础上拓展向量查询功能
 
     ```shell
-    docker run -d \
-    --name redis-stack \
-    --restart=always \
-    -v redis-data:/data \
-    -p 6379:6379 \
-    -p 8001:8001 \
-    -e REDIS_ARGS="--requirepass 123456" redis/redis-stack:latest
+       docker run -d --name redis-stack --restart=always -v redis-data:/data -p 6379:6379 -p 8001:8001 -e REDIS_ARGS="--requirepass 123456" redis/redis-stack:latest
     ```
 
 - neo4j 5+
 
   安装完neo4j访问`localhost:7474`, 默认的账号密码都是`neo4j`和`neo4j`。
-
+  密码统一 a12bCd3_W45pUq6
     ```shell
-    docker run \
-    -d \
-    -p 7474:7474 -p 7687:7687 \
-    -v neo4j-data:/data -v neo4j-data:/plugins \
-    --name neo4j \
-    -e NEO4J_apoc_export_file_enabled=true \
-    -e NEO4J_apoc_import_file_enabled=true \
-    -e NEO4J_apoc_import_file_use__neo4j__config=true \
-    -e NEO4JLABS_PLUGINS=\[\"apoc\"\] \
-    -e NEO4J_dbms_security_procedures_unrestricted=apoc.\\\* \
-    neo4j
+      docker run -d -p 7474:7474 -p 7687:7687 -v neo4j-data:/data -v neo4j-data:/plugins --name neo4j -e NEO4J_apoc_export_file_enabled=true -e NEO4J_apoc_import_file_enabled=true -e NEO4J_apoc_import_file_use__neo4j__config=true -e NEO4JLABS_PLUGINS=\[\"apoc\"\] -e NEO4J_dbms_security_procedures_unrestricted=apoc.\\\* neo4j
     ```
 
 ## 运行步骤
